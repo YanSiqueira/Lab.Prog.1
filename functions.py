@@ -146,39 +146,48 @@ def buscar_veiculo(string):
         return FileNotFoundError
 
 def diferenca_data(data1, data2):
-    splited_data1 = data1.split("/")
-    splited_data2 = data2.split("/")  
-    dia1 = int(splited_data1[0])    
-    mes1 = int(splited_data1[1])   
-    ano1 = int(splited_data1[2])  
-    tempo1 = datetime.date(day=dia1, month=mes1, year=ano1)  
-    dia2 = int(splited_data2[0])    
-    mes2 = int(splited_data2[1])   
-    ano2 = int(splited_data2[2]) 
-    tempo2 = datetime.date(day=dia2, month=mes2, year=ano2)    
-    diferenca = tempo2 - tempo1  
-    return diferenca.days
+    try:
+        splited_data1 = data1.split("/")
+        splited_data2 = data2.split("/")  
+        dia1 = int(splited_data1[0])    
+        mes1 = int(splited_data1[1])   
+        ano1 = int(splited_data1[2])  
+        tempo1 = datetime.date(day=dia1, month=mes1, year=ano1)  
+        dia2 = int(splited_data2[0])    
+        mes2 = int(splited_data2[1])   
+        ano2 = int(splited_data2[2]) 
+        tempo2 = datetime.date(day=dia2, month=mes2, year=ano2)    
+        diferenca = tempo2 - tempo1  
+    except AttributeError:
+        splited_data1 = data1.split("/")
+        dia1 = int(splited_data1[0])    
+        mes1 = int(splited_data1[1])   
+        ano1 = int(splited_data1[2])  
+        tempo1 = datetime.date(day=dia1, month=mes1, year=ano1)
+        diferenca = data2 - tempo1
+    finally:
+        return diferenca.days
 
 def inserir_aluguel(cpf='', nome='', contato='', endereco='', numero='', inicio='', fim='', diaria='', atraso='', taxa='', valor_p='', veiculo_chassi=''):
     try:
         df_aluguel_file = pd.read_excel('Files\\aluguel.xlsx', index_col=0)
         na = df_aluguel_file.index[df_aluguel_file['Cpf'].isna() == True].tolist()
         try:
-            df_aluguel_file.loc[na[0],["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim", "Diaria", "Atraso", "Taxa", "Valor_p", "Valor Final", "veiculo_chassi", "Status"]] = [cpf, nome, contato, endereco, numero, inicio, fim, diaria, atraso, taxa, valor_p, "", veiculo_chassi, "Aberto"]
+            df_aluguel_file.loc[na[0],["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim", "Diaria", "Atraso", "Taxa", "Valor Parcial", "Valor Final", "veiculo_chassi", "Status"]] = [cpf, nome, contato, endereco, numero, inicio, fim, diaria, atraso, taxa, valor_p, "", veiculo_chassi, "Aberto"]
         except IndexError:
             df_aluguel_file.loc[len(df_aluguel_file),["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim", "Diaria", "Atraso", "Taxa", "Valor Parcial", "Valor Final", "veiculo_chassi", "Status"]] = [cpf, nome, contato, endereco, numero, inicio, fim, diaria, atraso, taxa, valor_p, "", veiculo_chassi,  "Aberto"]
         finally:    
             df_aluguel_file.to_excel('Files\\aluguel.xlsx')
             return
     except FileNotFoundError:
-        df_file_login =  pd.DataFrame(columns=["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim", "Diaria", "Atraso", "Taxa", "Valor_p", "Valor Final", "veiculo_chassi", "Status"], index=[0])
+        df_file_login =  pd.DataFrame(columns=["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim", "Diaria", "Atraso", "Taxa", "Valor Parcial", "Valor Final", "veiculo_chassi", "Status"], index=[0])
         df_file_login.to_excel('Files\\aluguel.xlsx')
         return 0
 
 def table_aluguel(index_list, r=False):
     try:
         sg.set_options(font=("", 15))
-        headings =["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim" "Diaria", "Atraso", "Taxa", "Valor_p", "Valor Final", "veiculo_chassi", "Status"]
+        headings =["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim" "Diaria", "Atraso", "Taxa", "Valor Parcial", "Valor Final", "veiculo_chassi", "Status"]
         df_aluguel_file = pd.read_excel('Files\\aluguel.xlsx', index_col=0)
         rows=[]
         for i in index_list:
@@ -211,4 +220,20 @@ def buscar_aluguel(string):
         return list
     except FileNotFoundError:
         return FileNotFoundError
+    
+def concluir_aluguel(chassi, valor_f):
+    try:
+        df_aluguel_file = pd.read_excel('Files\\aluguel.xlsx', index_col=0)
+        index = df_aluguel_file.index[df_aluguel_file['veiculo_chassi'] == chassi].tolist()
+        try:
+            df_aluguel_file.loc[index[0],["Valor Final", "Status"]] = [valor_f, "Fechado"]
+        except IndexError:
+            IndexError
+        finally:    
+            df_aluguel_file.to_excel('Files\\aluguel.xlsx')
+            return
+    except FileNotFoundError:
+        df_file_login =  pd.DataFrame(columns=["Cpf", "Nome", "Contato", "Endereco", "Numero", "Início", "Fim", "Diaria", "Atraso", "Taxa", "Valor Parcial", "Valor Final", "veiculo_chassi", "Status"], index=[0])
+        df_file_login.to_excel('Files\\aluguel.xlsx')
+        return 0
     

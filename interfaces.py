@@ -6,6 +6,7 @@ import PySimpleGUI as sg
 from PIL import Image
 import pandas as pd
 import base64
+import datetime
 
 df_veicle_file = pd.read_excel('Files\\veicles.xlsx', index_col=0)
 df_aluguel_file = pd.read_excel('Files\\aluguel.xlsx', index_col=0)
@@ -104,8 +105,9 @@ def Scream_aluguel_veiculos():
         if event == 'Iniciar Aluguel':
             window.close()
             Scream_iniciar_aluguel_veiculo()
-        elif event == 'Catálogo de veículos':
-            print("chama tela de Encerar Aluguel(a implementar)")
+        elif event == 'Concluir Aluguel':
+            window.close()
+            Scream_concuir_aluguel_veiculo()
         elif event == 'Consultar Aluguel':
             Screen_tabela_aluguel()
         elif event == 'Voltar':
@@ -201,6 +203,7 @@ def Screen_cadastrar_veiculo():
     window.close()
 
 def Screen_tabela_veiculo(index_list=range(0,len(df_veicle_file)), search=''):
+    row =''
     if search != '':
         tb = functions.table(functions.buscar_veiculo(search))
     else:
@@ -224,6 +227,7 @@ def Screen_tabela_veiculo(index_list=range(0,len(df_veicle_file)), search=''):
     return row    
 
 def Screen_tabela_aluguel(index_list=range(0,len(df_aluguel_file)), search=''):
+    row =''
     if search != '':
         tb = functions.table_aluguel(functions.buscar_aluguel(search))
     else:
@@ -243,8 +247,9 @@ def Screen_tabela_aluguel(index_list=range(0,len(df_aluguel_file)), search=''):
             else:
                 row = functions.table_aluguel(index_list,True)[event[2][0]]
     
-    window.close()      
-    return row    
+    window.close()
+    if row != '':
+        return row    
     
 
 def Scream_Pesquisar_veiculo():
@@ -290,7 +295,7 @@ def Scream_iniciar_aluguel_veiculo():
             sg.In(key='-fim-', enable_events=True, size =(12,1), font=("", 15)), sg.Button("Calcular")],
             [sg.Text('Valor Parcial:', text_color=('white'), font=("", 15)), sg.Text(key='-valor-', size =(40, 1), font=("", 15), text_color=('dark green'))],
             [sg.Text("~ Veículo ~", text_color=('white'), font=("", 15), justification='center', expand_x= True)],
-            [sg.Text("Veículo:", font=("", 15)), sg.Input(size=(29, 1), font=("", 15), key="-search-", do_not_clear=False), sg.Button("Buscar"), sg.Button("Mostar tudo")],
+            [sg.Text("Veículo:", font=("", 15)), sg.Input(size=(29, 1), font=("", 15), key="-search-"), sg.Button("Buscar"), sg.Button("Mostar tudo")],
             [sg.Text(key='-veiculo-', size =(40, 1), font=("", 10), justification='center', expand_x= True)],
             [sg.Button("Concluir", font=("", 15), button_color=('dark green'))]]
             
@@ -320,14 +325,64 @@ def Scream_iniciar_aluguel_veiculo():
             if values['-inicio-'] != '' and values['-fim-'] != '' and values['-diaria-'] != '':
                 valor = (functions.diferenca_data(values['-inicio-'], values['-fim-']) * float(values['-diaria-']))
                 window['-valor-'].update(valor)
-        elif event == 'Voltar':
-            window.close()
-            Scream_aluguel_veiculos()
         elif event == 'Concluir':
             if values['-cpf-'] != '' and values['-nome-'] != '' and values['-endereco-'] != '' and values['-numero-'] != '' and values['-contato-'] != '' and values['-diaria-'] != '' and values['-atraso-'] != '' and values['-taxa-'] != '' and values['-inicio-'] != '' and values['-fim-'] != ''and veiculo != '':
                 functions.inserir_aluguel(values['-cpf-'], values['-nome-'], values['-contato-'], values['-endereco-'], values['-numero-'], values['-inicio-'], values['-fim-'],values['-diaria-'], values['-atraso-'], values['-taxa-'], valor, veiculo[0])
+                window['-valor-'].update('')
+                sg.popup("Operação bem sucedida!")
+                window.close()
+                Scream_aluguel_veiculos()
         elif event == sg.WIN_CLOSED:
                 break
     window.close()
 
-Scream_aluguel_veiculos()
+def Scream_concuir_aluguel_veiculo():
+    valor=''
+    layout_column = [[sg.Text('Voltar',enable_events=True, justification='left', expand_x= True)],
+            [sg.Text("Concluir Aluguel Veículo", font=("", 35), justification='center', expand_x= True)],
+            [sg.Text("", font=("", 35))],
+            [sg.Text("Aluguel:", font=("", 15)), sg.Input(size=(29, 1), font=("", 15), key="-search-", do_not_clear=False), sg.Button("Buscar"), sg.Button("Mostar tudo")],
+            [sg.Text(key='-aluguel-', size =(40, 1), font=("", 10), justification='center', expand_x= True)],
+            [sg.Button("Calcular"), sg.Text('Valor Final:', text_color=('white'), font=("", 15)), sg.Text(key='-valor-', size =(40, 1), font=("", 15), text_color=('dark green'))],
+            [sg.Button("Concluir", font=("", 15), button_color=('dark green'))]]
+            
+    layout = [[sg.Column(layout_column, element_justification='center', expand_x=True)]]
+    window = sg.Window('Locadora de Carros', layout, resizable=True, size=(600,600))
+
+    while True:
+        event, values = window.read()
+        if event == "Buscar" and values['-search-'] != '':
+            try:
+                aluguel = Screen_tabela_aluguel(functions.table_aluguel(functions.buscar_aluguel(values['-search-'])),values['-search-'])[0:6]
+            except:
+                aluguel = ''
+            finally:
+                window['-aluguel-'].update(aluguel)
+        elif event == "Mostar tudo":
+            try:
+                aluguel = Screen_tabela_aluguel()
+            except:
+                aluguel = ''
+            finally:
+                window['-aluguel-'].update(aluguel[5:10])
+        elif event == 'Voltar':
+            window.close()
+            Scream_aluguel_veiculos()
+        elif event == 'Calcular':
+            if  functions.diferenca_data(aluguel[5], datetime.date.today()) == 0:
+                valor = aluguel[10]
+                window['-valor-'].update(valor)
+            elif functions.diferenca_data(aluguel[5], datetime.date.today()) < 0:
+                valor = (functions.diferenca_data(aluguel[5], datetime.date.today()) * float(aluguel[6]))
+                window['-valor-'].update(valor)
+            elif functions.diferenca_data(aluguel[5], datetime.date.today()) > 0:
+                valor = ((functions.diferenca_data(aluguel[6], datetime.date.today()) * (float(aluguel[8]))) + float(aluguel[7] + float(aluguel[9])))
+                window['-valor-'].update(valor)
+        elif event == 'Concluir':
+            if  valor != '':
+                functions.concluir_aluguel(aluguel[11], valor)
+                sg.popup("Operação bem sucedida!")
+                window['-valor-'].update('')
+        elif event == sg.WIN_CLOSED:
+                break
+    window.close()
